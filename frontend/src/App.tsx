@@ -44,7 +44,7 @@ function App() {
   useEffect(() => {
     const fetchCanteens = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:8080/canteens`);
+        const res = await fetch(`/api/canteens`);
         const json = await res.json();
         setCanteenList(json.canteens);
       } catch (error) {
@@ -58,7 +58,7 @@ function App() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`http://127.0.0.1:8080/recommendations/${activeUser}`);
+        const res = await fetch(`/api/recommendations/${activeUser}`);
         if (!res.ok) throw new Error('Network response was not ok');
         const json = await res.json();
         setData(json);
@@ -78,7 +78,7 @@ function App() {
     setEnrichLoading(true);
     
     try {
-      const res = await fetch(`http://127.0.0.1:8080/eat`, {
+      const res = await fetch(`/api/eat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -104,7 +104,7 @@ function App() {
 
   const handleReset = async () => {
     try {
-      const res = await fetch(`http://127.0.0.1:8080/reset/${activeUser}`, {
+      const res = await fetch(`/api/reset/${activeUser}`, {
         method: 'POST'
       });
       if (!res.ok) throw new Error('Failed to reset');
@@ -121,7 +121,7 @@ function App() {
     setAdminLoading(true);
     setAdminSuccess('');
     try {
-      const res = await fetch(`http://127.0.0.1:8080/enrich`, {
+      const res = await fetch(`/api/enrich`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dish_name: adminDishName, canteen_name: adminCanteen || 'Unknown Canteen' })
