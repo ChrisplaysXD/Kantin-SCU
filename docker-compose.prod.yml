@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scu-canteen-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://scu_admin:scu_canteen_2026@db:5432/scu_canteen
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-your_super_secret_key_here}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    container_name: scu-canteen-db-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: scu_admin
+      POSTGRES_PASSWORD: scu_canteen_2026
+      POSTGRES_DB: scu_canteen
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scu_admin -d scu_canteen"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata_prod:
