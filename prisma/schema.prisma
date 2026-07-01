@@ -83,6 +83,7 @@ model HealthProfile {
   customCalorieTarget Int?          @map("custom_calorie_target")
   bmr                 Float?
   tdee                Float?
+  calorieResetAt      DateTime?     @map("calorie_reset_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
