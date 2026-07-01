@@ -24,6 +24,18 @@ export default function DashboardPage() {
     fetch('/api/orders?limit=5').then(r => r.json()).then(setOrders)
   }, [])
 
+  const handleResetCalories = async () => {
+    if (!confirm('Yakin ingin mereset asupan kalori hari ini ke nol? (Histori pesanan tidak akan hilang)')) return;
+    try {
+      const res = await fetch('/api/health/reset-calories', { method: 'POST' });
+      if (res.ok) {
+        fetch('/api/recommendations').then(r => r.json()).then(setRecData);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   const balance = walletData?.balance ? Number(walletData.balance).toLocaleString('id-ID') : '...'
 
   const fadeIn = (delay: number) => ({
@@ -86,9 +98,14 @@ export default function DashboardPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
         {/* calorie tracker */}
         <motion.div {...fadeIn(0.4)} className="glass-card-static" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <TrendingUp size={18} color="var(--primary)" /> Kalori Hari Ini
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <TrendingUp size={18} color="var(--primary)" /> Kalori Hari Ini
+            </h3>
+            <button onClick={handleResetCalories} className="btn btn-ghost btn-sm" style={{ color: 'var(--text-muted)' }} title="Reset Kalori">
+              Reset
+            </button>
+          </div>
           {recData ? (
             <CalorieRing consumed={recData.todayIntake?.calories || 0} target={recData.targetCalories || 2000} />
           ) : (

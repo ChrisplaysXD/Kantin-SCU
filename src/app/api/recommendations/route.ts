@@ -29,10 +29,15 @@ export async function GET() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
+  let startTime = today
+  if (profile?.calorieResetAt && profile.calorieResetAt > today) {
+    startTime = profile.calorieResetAt
+  }
+
   const todayOrders = await prisma.order.findMany({
     where: {
       userId,
-      createdAt: { gte: today },
+      createdAt: { gte: startTime },
       status: { not: 'CANCELLED' },
     },
     include: {

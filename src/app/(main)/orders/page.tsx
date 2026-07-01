@@ -23,6 +23,22 @@ export default function OrdersPage() {
     })
   }, [])
 
+  const handleCancelOrder = async (orderId: string) => {
+    if (!confirm('Yakin ingin membatalkan pesanan ini? Saldo akan dikembalikan ke wallet.')) return;
+    try {
+      const res = await fetch(`/api/orders/${orderId}/cancel`, { method: 'POST' });
+      if (res.ok) {
+        fetch('/api/orders').then(r => r.json()).then(data => setOrders(data))
+      } else {
+        const err = await res.json()
+        alert(err.error || 'Gagal membatalkan pesanan')
+      }
+    } catch (e) {
+      console.error(e)
+      alert('Terjadi kesalahan')
+    }
+  }
+
   if (loading) {
     return (
       <div>
@@ -96,12 +112,23 @@ export default function OrdersPage() {
                 </div>
 
                 {/* seat / takeaway info */}
-                <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  {order.isTakeaway ? (
-                    <span>📦 Takeaway</span>
-                  ) : rowLabel ? (
-                    <span>💺 Kursi {rowLabel}</span>
-                  ) : null}
+                <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    {order.isTakeaway ? (
+                      <span>📦 Takeaway</span>
+                    ) : rowLabel ? (
+                      <span>💺 Kursi {rowLabel}</span>
+                    ) : null}
+                  </div>
+                  {(order.status === 'PENDING' || order.status === 'PREPARING') && (
+                    <button 
+                      onClick={() => handleCancelOrder(order.id)}
+                      className="btn btn-sm" 
+                      style={{ backgroundColor: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)', padding: '4px 12px' }}
+                    >
+                      Batalkan
+                    </button>
+                  )}
                 </div>
               </motion.div>
             )
