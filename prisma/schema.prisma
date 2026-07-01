@@ -1,0 +1,220 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+enum HealthGoal {
+  MAINTAIN
+  LOSE
+  GAIN
+}
+
+enum TransactionType {
+  TOP_UP
+  PAYMENT
+  REFUND
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  DONE
+  CANCELLED
+}
+
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  name      String
+  studentId String?  @unique @map("student_id")
+  role      Role     @default(USER)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  wallet        Wallet?
+  healthProfile HealthProfile?
+  orders        Order[]
+
+  @@map("users")
+}
+
+model HealthProfile {
+  id                  String        @id @default(uuid())
+  userId              String        @unique @map("user_id")
+  weight              Float?
+  height              Float?
+  age                 Int?
+  gender              Gender?
+  activityLevel       ActivityLevel @default(MODERATE) @map("activity_level")
+  goal                HealthGoal    @default(MAINTAIN)
+  customCalorieTarget Int?          @map("custom_calorie_target")
+  bmr                 Float?
+  tdee                Float?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("health_profiles")
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  balance   Decimal  @default(0) @db.Decimal(12, 2)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("wallets")
+}
+
+model Transaction {
+  id             String            @id @default(uuid())
+  walletId       String            @map("wallet_id")
+  type           TransactionType
+  amount         Decimal           @db.Decimal(12, 2)
+  description    String?
+  midtransId     String?           @unique @map("midtrans_id")
+  status         TransactionStatus @default(PENDING)
+  createdAt      DateTime          @default(now()) @map("created_at")
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, createdAt])
+  @@map("transactions")
+}
+
+model Canteen {
+  id          String  @id @default(uuid())
+  name        String
+  building    String
+  description String?
+  imageUrl    String? @map("image_url")
+  seatRows    Int     @default(4) @map("seat_rows")
+  seatCols    Int     @default(5) @map("seat_cols")
+
+  sellers Seller[]
+  seats   Seat[]
+  orders  Order[]
+
+  @@map("canteens")
+}
+
+model Seller {
+  id          String  @id @default(uuid())
+  canteenId   String  @map("canteen_id")
+  name        String
+  description String?
+  imageUrl    String? @map("image_url")
+
+  canteen   Canteen    @relation(fields: [canteenId], references: [id], onDelete: Cascade)
+  menuItems MenuItem[]
+
+  @@map("sellers")
+}
+
+model MenuItem {
+  id          String  @id @default(uuid())
+  sellerId    String  @map("seller_id")
+  name        String
+  price       Decimal @db.Decimal(10, 2)
+  category    String
+  calories    Int?
+  protein     Float?
+  carbs       Float?
+  fat         Float?
+  fiber       Float?
+  imageUrl    String? @map("image_url")
+  isAvailable Boolean @default(true) @map("is_available")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  seller     Seller      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([sellerId, isAvailable])
+  @@map("menu_items")
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  userId      String      @map("user_id")
+  canteenId   String      @map("canteen_id")
+  seatId      String?     @map("seat_id")
+  status      OrderStatus @default(PENDING)
+  totalAmount Decimal     @db.Decimal(12, 2)
+  queueNumber Int         @map("queue_number")
+  isTakeaway  Boolean     @default(false) @map("is_takeaway")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  user    User        @relation(fields: [userId], references: [id])
+  canteen Canteen     @relation(fields: [canteenId], references: [id])
+  seat    Seat?       @relation(fields: [seatId], references: [id])
+  items   OrderItem[]
+
+  @@index([userId, createdAt])
+  @@index([canteenId, createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String  @id @default(uuid())
+  orderId    String  @map("order_id")
+  menuItemId String  @map("menu_item_id")
+  quantity   Int
+  subtotal   Decimal @db.Decimal(10, 2)
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@map("order_items")
+}
+
+model Seat {
+  id               String    @id @default(uuid())
+  canteenId        String    @map("canteen_id")
+  seatNumber       Int       @map("seat_number")
+  row              Int
+  col              Int
+  isOccupied       Boolean   @default(false) @map("is_occupied")
+  occupiedUntil    DateTime? @map("occupied_until")
+  occupiedByUserId String?   @map("occupied_by_user_id")
+
+  canteen Canteen @relation(fields: [canteenId], references: [id], onDelete: Cascade)
+  orders  Order[]
+
+  @@unique([canteenId, row, col])
+  @@map("seats")
+}
